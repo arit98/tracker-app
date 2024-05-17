@@ -1,4 +1,10 @@
-import React, { useRef, useState, TouchEvent, MouseEvent } from "react";
+import React, {
+  useRef,
+  useState,
+  useEffect,
+  MouseEvent,
+  TouchEvent,
+} from "react";
 import { FaChevronRight } from "react-icons/fa6";
 
 interface SwipeButtonProps {
@@ -19,68 +25,79 @@ const SwipeButton: React.FC<SwipeButtonProps> = ({
   const buttonRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
+  const [offsetX, setOffsetX] = useState(0);
   const [isSwiped, setIsSwiped] = useState(false);
 
-  const handleTouchStart = (e: TouchEvent | MouseEvent) => {
+  useEffect(() => {
+    if (isDragging) {
+      const handleMove = (e: MouseEvent | TouchEvent) => {
+        const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+        const diffX = clientX - startX;
+        setOffsetX(diffX);
+      };
+
+      const handleEnd = () => {
+        setIsDragging(false);
+        // @ts-ignore
+        window.removeEventListener("mousemove", handleMove);
+        window.removeEventListener("mouseup", handleEnd);
+        // @ts-ignore
+        window.removeEventListener("touchmove", handleMove);
+        window.removeEventListener("touchend", handleEnd);
+
+        const buttonWidth = buttonRef.current?.offsetWidth ?? 0;
+        const containerWidth =
+          buttonRef.current?.parentElement?.offsetWidth ?? 0;
+
+        if (offsetX > containerWidth / 2 - buttonWidth / 2) {
+          setIsSwiped(true);
+          setGoalsStates({
+            isWorkout: true,
+            isRead: true,
+            isStep: true,
+            isSleep: true,
+            isWater: true,
+          });
+          setProgress(100);
+          if (buttonRef.current) {
+            buttonRef.current.style.transform = `translateX(${
+              containerWidth - buttonWidth - 14
+            }px)`;
+          }
+        } else {
+          setIsSwiped(false);
+          setGoalsStates({
+            isWorkout: false,
+            isRead: false,
+            isStep: false,
+            isSleep: false,
+            isWater: false,
+          });
+          setProgress(0);
+          if (buttonRef.current) {
+            buttonRef.current.style.transform = "";
+          }
+        }
+      };
+
+      // @ts-ignore
+      window.addEventListener("mousemove", handleMove);
+      window.addEventListener("mouseup", handleEnd);
+      // @ts-ignore
+      window.addEventListener("touchmove", handleMove);
+      window.addEventListener("touchend", handleEnd);
+    }
+  }, [isDragging, offsetX, setGoalsStates, setProgress, startX]);
+
+  const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
+    e.preventDefault(); // Prevent text selection while dragging
     setIsDragging(true);
-    setStartX("touches" in e ? e.touches[0].clientX : e.clientX);
+    setStartX(e.clientX);
   };
 
-  const handleTouchMove = (e: TouchEvent | MouseEvent) => {
-    if (!isDragging) return;
-
-    const currentX = "touches" in e ? e.touches[0].clientX : e.clientX;
-    const diffX = currentX - startX;
-    const buttonWidth = buttonRef.current?.offsetWidth ?? 0;
-    const containerWidth = buttonRef.current?.parentElement?.offsetWidth ?? 0;
-
-    if (diffX > 0 && diffX < containerWidth - buttonWidth) {
-      if (buttonRef.current) {
-        buttonRef.current.style.transform = `translateX(${diffX}px)`;
-      }
-    }
-  };
-
-  const handleTouchEnd = (e: TouchEvent | MouseEvent) => {
-    if (!isDragging) return;
-
-    const buttonWidth = buttonRef.current?.offsetWidth ?? 0;
-    const containerWidth = buttonRef.current?.parentElement?.offsetWidth ?? 0;
-    const currentX =
-      "changedTouches" in e ? e.changedTouches[0].clientX : e.clientX;
-    const diffX = currentX - startX;
-
-    setIsDragging(false);
-
-    if (diffX > containerWidth / 2 - buttonWidth / 2) {
-      setIsSwiped(true);
-      setGoalsStates({
-        isWorkout: true,
-        isRead: true,
-        isStep: true,
-        isSleep: true,
-        isWater: true,
-      });
-      setProgress(100);
-      if (buttonRef.current) {
-        buttonRef.current.style.transform = `translateX(${
-          containerWidth - buttonWidth - 14
-        }px)`;
-      }
-    } else {
-      setIsSwiped(false);
-      setGoalsStates({
-        isWorkout: false,
-        isRead: false,
-        isStep: false,
-        isSleep: false,
-        isWater: false,
-      });
-      setProgress(0);
-      if (buttonRef.current) {
-        buttonRef.current.style.transform = "";
-      }
-    }
+  const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
+    setIsDragging(true);
+    setStartX(e.touches[0].clientX);
   };
 
   return (
@@ -96,12 +113,11 @@ const SwipeButton: React.FC<SwipeButtonProps> = ({
           isSwiped ? "bg-[#D15439]" : ""
         }`}
         ref={buttonRef}
+        onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onMouseDown={handleTouchStart}
-        onMouseMove={handleTouchMove}
-        onMouseUp={handleTouchEnd}
+        style={{
+          transform: `translateX(${offsetX}px)`,
+        }}
       >
         Track
       </div>
