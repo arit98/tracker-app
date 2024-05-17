@@ -8,6 +8,7 @@ import BarChart from "@/components/BarChart";
 import GoalsComponents from "@/components/GoalsComponent.tsx";
 import SwipeButton from "@/components/SwipeButton";
 import Header from "@/components/Header";
+import dayjs from "dayjs";
 
 const goalsData = [
   {
@@ -25,8 +26,7 @@ const goalsData = [
   {
     icon: IoFootstepsSharp,
     text: "30 mins walk",
-    state:
-    "isStep",
+    state: "isStep",
     color: "#81B47D",
   },
   {
@@ -82,8 +82,16 @@ const HomePage = () => {
     return () => window.removeEventListener("resize", updateBarWidth);
   }, []);
 
+  const generatePastDates = (numOfWeeks) => {
+    const dates = [];
+    for (let i = numOfWeeks - 1; i >= 0; i--) {
+      dates.push(dayjs().subtract(i, "week").format("DD/MM"));
+    }
+    return dates;
+  };
+
   const data = {
-    labels: ["28/4", "30/4", "02/5", "05/5", "11/5", "15/5", "15/5", "22/5"],
+    labels: generatePastDates(8),
     datasets: [
       {
         label: "Percentage",
@@ -121,8 +129,11 @@ const HomePage = () => {
 
   return (
     <div className="flex flex-col items-center w-[80%] m-auto mt-12 gap-4 mb-16 select-none">
-      <Header goalsStates={goalsStates} goalsData={goalsData} progress={progress} />
-
+      <Header
+        goalsStates={goalsStates}
+        goalsData={goalsData}
+        progress={progress}
+      />
       <div className="flex items-center justify-between w-full mt-4 mb-4">
         <p className="text-white">Today's Goal</p>
         <IoFitness className="text-2xl md:text-3xl text-red-500 animate-pulse" />
@@ -147,4 +158,4 @@ const HomePage = () => {
   );
 };
 
-export default HomePage;
+export default HomePage
